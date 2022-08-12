@@ -146,23 +146,27 @@ def get_nickname(soup):
         return None
 
 def main():
-    names = ["Ian Somerhalder", "Selena Gomez", "David Henry", "Adam Driver", "Adam Sandler"]
+    names = ["Ian Somerhalder", "Selena Gomez", "David Henry", "Adam Driver", "Adam Sandler", "Ryan Reynolds", "Nina Dobrev", 
+    "Ryan Gosling", "David Schwimmer", "Adam Sandler", "Jennifer Aniston", "Johnny Depp", "Orlando Bloom", "Kate Winslet", 
+    "Leonardo Dicaprio", "Brad Pitt", "Matthew Perry", "Courteney Cox", "Lily Collins", "Lisa Kudrow", "Brandon Flynn",
+     "Tom Cruise", "Jim Parsons", "Chris Evans", "Chris Hemsworth"]
     columns = ["Person name", "URL", "Role 1", "Role 2", "Role 3", "Video", "Actor description",
                                 "Other works", "Alternate names", "Spouse", "Children", "Parents", "Personal quotes",
                                 "Trivia", "Trademark", "Nickname"]
     df_main = pd.DataFrame(columns = columns)
     for name in tqdm(names):
         url = get_url(name)
-        headers = {"Accept-Language": "en,en-gb;q=0.5"}
-        r = requests.get(url, headers=headers)
-        soup = BeautifulSoup(r.text, features="lxml")
-        d = {columns[0]: [name], columns[1]: [url], columns[2]: [get_roles(soup)[0]], columns[3]: [get_roles(soup)[1]], 
-            columns[4]: [get_roles(soup)[2]], columns[5]: [get_video_url(soup)], columns[6]: [get_bio(url)], 
-            columns[7]: [get_other_works(soup)], columns[8]: [get_alternate_names(soup)], columns[9]: [get_spouse(soup)],
-            columns[10]: [get_children(soup)], columns[11]: [get_parents(soup)], columns[12]: [get_quotes(soup)],
-            columns[13]: [get_trivia(soup)], columns[14]: [get_trademark(soup)], columns[15]: [get_nickname(soup)]}
-        df_temp = pd.DataFrame.from_dict(d)
-        df_main = pd.concat([df_main, df_temp], ignore_index = True)
+        if url != None:
+            headers = {"Accept-Language": "en,en-gb;q=0.5"}
+            r = requests.get(url, headers=headers)
+            soup = BeautifulSoup(r.text, features="lxml")
+            d = {columns[0]: [name], columns[1]: [url], columns[2]: [get_roles(soup)[0]], columns[3]: [get_roles(soup)[1]], 
+                columns[4]: [get_roles(soup)[2]], columns[5]: [get_video_url(soup)], columns[6]: [get_bio(url)], 
+                columns[7]: [get_other_works(soup)], columns[8]: [get_alternate_names(soup)], columns[9]: [get_spouse(soup)],
+                columns[10]: [get_children(soup)], columns[11]: [get_parents(soup)], columns[12]: [get_quotes(soup)],
+                columns[13]: [get_trivia(soup)], columns[14]: [get_trademark(soup)], columns[15]: [get_nickname(soup)]}
+            df_temp = pd.DataFrame.from_dict(d)
+            df_main = pd.concat([df_main, df_temp], ignore_index = True)
     df_main.to_excel("output.xlsx")
     return "Done!"
 
