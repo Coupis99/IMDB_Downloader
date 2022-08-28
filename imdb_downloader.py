@@ -1,7 +1,12 @@
+from operator import index
 import requests
 import pandas as pd
 from bs4 import BeautifulSoup
 from tqdm import tqdm
+import time 
+from openpyxl import load_workbook
+from os.path import exists
+
 
 def get_url(name):
     try:
@@ -27,6 +32,8 @@ def get_roles(soup):
                 roles_arr.append(res + " in " + str(role.find("a").text))
                 if len(roles_arr) > 2:
                     break
+        if roles_arr == []:
+            return None
         return roles_arr
     except:
         return None
@@ -45,6 +52,8 @@ def get_bio(url):
         r = requests.get(url +"/bio", headers=headers)
         soup = BeautifulSoup(r.text, features="lxml")
         bio = soup.find("div", {"class": "soda odd"}).find("p").text.strip()
+        if bio == "":
+            return None
         return bio
     except:
         return None
@@ -57,6 +66,8 @@ def get_other_works(soup):
             if val.strip() != "":
                 res = val.strip()
                 break
+        if res == "":
+            return None
         return res
     except:
         return None
@@ -64,6 +75,8 @@ def get_other_works(soup):
 def get_spouse(soup):
     try:
         spouse = soup.find("div", {"id": "details-spouses"}).find("a").text
+        if spouse == "":
+            return None
         return spouse
     except:
         return None
@@ -75,6 +88,8 @@ def get_alternate_names(soup):
         for val in akas:
             if val.strip() != "":
                 res.append(val.strip())
+        if res == []:
+            return None
         return str(", ".join(res))
     except:
         return None
@@ -84,8 +99,10 @@ def get_children(soup):
         res = []
         arr = soup.find("div", {"id": "details-children"}).find_all(text = True, recursive = True)
         for val in arr:
-            if (val.strip() != "") and (val.strip() != "Children:") and (val.strip() != "|"):
+            if (val.strip() != "") and (val.strip() != "Children:") and (val.strip() != "|") and (val.strip() != "»") and (val != "See more"):
                 res.append(val.strip())
+        if res == []:
+            return None
         return " | ".join(res)
     except:
         return None
@@ -95,8 +112,10 @@ def get_parents(soup):
         res = []
         arr = soup.find("div", {"id": "details-parents"}).find_all(text = True, recursive = True)
         for val in arr:
-            if (val.strip() != "") and (val.strip() != "Parents:") and (val.strip() != "|"):
+            if (val.strip() != "") and (val.strip() != "Parents:") and (val.strip() != "|") and (val.strip() != "»") and (val != "See more"):
                 res.append(val.strip())
+        if res == []:
+            return None
         return " | ".join(res)
     except:
         return None
@@ -106,8 +125,10 @@ def get_quotes(soup):
         res = []
         arr = soup.find("div", {"id": "dyk-personal-quote"}).find_all(text = True, recursive = True)
         for val in arr:
-                if (val.strip() != "") and (val.strip() != "Personal Quote:") and (val.strip() != "»") and (val != "See more"):
-                    res.append(val.strip())
+            if (val.strip() != "") and (val.strip() != "Personal Quote:") and (val.strip() != "»") and (val != "See more"):
+                res.append(val.strip())
+        if res == []:
+            return None
         return " | ".join(res)
     except:
         return None
@@ -117,8 +138,10 @@ def get_trivia(soup):
         res = []
         arr = soup.find("div", {"id": "dyk-trivia"}).find_all(text = True, recursive = True)
         for val in arr:
-                if (val.strip() != "") and (val.strip() != "Trivia:") and (val.strip() != "»") and (val != "See more"):
-                    res.append(val.strip())
+            if (val.strip() != "") and (val.strip() != "Trivia:") and (val.strip() != "»") and (val != "See more"):
+                res.append(val.strip())
+        if res == []:
+            return None
         return " | ".join(res)
     except:
         return None
@@ -128,8 +151,10 @@ def get_trademark(soup):
         res = []
         arr = soup.find("div", {"id": "dyk-trademark"}).find_all(text = True, recursive = True)
         for val in arr:
-                if (val.strip() != "") and (val.strip() != "Trademark:") and (val.strip() != "»") and (val != "See more"):
-                    res.append(val.strip())
+            if (val.strip() != "") and (val.strip() != "Trademark:") and (val.strip() != "»") and (val != "See more"):
+                res.append(val.strip())
+        if res == []:
+            return None
         return " | ".join(res)
     except:
         return None
@@ -139,21 +164,44 @@ def get_nickname(soup):
         res = []
         arr = soup.find("div", {"id": "dyk-nickname"}).find_all(text = True, recursive = True)
         for val in arr:
-                if (val.strip() != "") and (val.strip() != "Nickname:") and (val.strip() != "»") and (val != "See more"):
-                    res.append(val.strip())
+            if (val.strip() != "") and (val.strip() != "Nickname:") and (val.strip() != "»") and (val != "See more"):
+                res.append(val.strip())
+        if res == []:
+            return None
         return " | ".join(res)
     except:
         return None
 
+def create_excel(df, file):
+    writer = pd.ExcelWriter(file)
+    df.to_excel(writer, sheet_name="Actors", index=False)
+    writer.save()
+    return "Excel created"
+
+def update_excel(df ,file):
+    reader = pd.read_excel(file, engine='openpyxl')
+    book = load_workbook(file)
+    writer = pd.ExcelWriter(file, engine='openpyxl') 
+    writer.book = book
+    writer.sheets = dict((ws.title, ws) for ws in writer.book.worksheets)
+    df.to_excel(writer, sheet_name = 'Actors', index=False, header=False, startrow=len(reader)+1)
+    writer.save()
+    return "Excel updated"
+
 def main():
-    names = ["Ian Somerhalder", "Selena Gomez", "David Henry", "Adam Driver", "Adam Sandler", "Ryan Reynolds", "Nina Dobrev", 
-    "Ryan Gosling", "David Schwimmer", "Adam Sandler", "Jennifer Aniston", "Johnny Depp", "Orlando Bloom", "Kate Winslet", 
-    "Leonardo Dicaprio", "Brad Pitt", "Matthew Perry", "Courteney Cox", "Lily Collins", "Lisa Kudrow", "Brandon Flynn",
-     "Tom Cruise", "Jim Parsons", "Chris Evans", "Chris Hemsworth"]
+    wait_time = 60
+    file = "output.xlsx"
+    names = []
+    names_df = pd.read_excel("Directors_3022.xlsx")
+    for val in names_df["Directors"]:
+        names.append(val)
     columns = ["Person name", "URL", "Role 1", "Role 2", "Role 3", "Video", "Actor description",
-                                "Other works", "Alternate names", "Spouse", "Children", "Parents", "Personal quotes",
-                                "Trivia", "Trademark", "Nickname"]
+    "Other works", "Alternate names", "Spouse", "Children", "Parents", "Personal quotes",
+    "Trivia", "Trademark", "Nickname"]
     df_main = pd.DataFrame(columns = columns)
+    if not exists(file):
+        create_excel(df_main, file)
+    start_time = time.time()
     for name in tqdm(names):
         url = get_url(name)
         if url != None:
@@ -167,7 +215,16 @@ def main():
                 columns[13]: [get_trivia(soup)], columns[14]: [get_trademark(soup)], columns[15]: [get_nickname(soup)]}
             df_temp = pd.DataFrame.from_dict(d)
             df_main = pd.concat([df_main, df_temp], ignore_index = True)
-    df_main.to_excel("output.xlsx")
+        end_time = time.time()
+        print(end_time - start_time)
+        print(df_main)
+        if end_time - start_time > wait_time:
+            update_excel(df_main, file)
+            print("Written")
+            df_main = pd.DataFrame(columns = columns)
+            start_time = time.time()
+    update_excel(df_main, file)
+    print("Finished!")
     return "Done!"
 
 if __name__ == "__main__":
