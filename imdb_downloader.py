@@ -19,24 +19,36 @@ def get_url(name):
     except:
         return None
 
-def get_roles(soup):
+def get_born(soup):
     try:
-        roles_arr = []
-        roles = soup.find("div", {"class": "filmo-category-section"})
-        for role in roles.find_all("div", recursive=False):
-            if len(role.find_all("a", {"class": "in_production"})) == 0:
-                res = ""
-                for val in role.find_all(text=True, recursive=False):
-                    if val.strip() != "":
-                        res = val.strip()
-                roles_arr.append(res + " in " + str(role.find("a").text))
-                if len(roles_arr) > 2:
-                    break
-        if roles_arr == []:
+        res_arr = []
+        arr = soup.find("div", {"id": "name-born-info"}).find_all(text = True, recursive = True)
+        for val in arr:
+            if val.strip() != "" and val.strip() != "Born:":
+                res_arr.append(val.strip())
+        if len(res_arr) != 0:
+            return str(" ".join(res_arr))
+        else:
             return None
-        return roles_arr
     except:
         return None
+
+def get_roles(soup):
+    roles_arr = [None, None, None]
+    try:
+        roles = soup.find("div", {"id": "jumpto"}).find_all("a")
+        if len(roles) == 0:
+            return roles_arr
+        leng = 0
+        if len(roles) > 2:
+            leng = 3
+        else:
+            leng = len(roles)
+        for i in range(leng):
+            roles_arr[i] = roles[i].text
+        return roles_arr
+    except:
+        return roles_arr
 
 def get_video_url(soup):
     try:
@@ -189,13 +201,13 @@ def update_excel(df ,file):
     return "Excel updated"
 
 def main():
-    wait_time = 60
+    wait_time = 10
     file = "output.xlsx"
     names = []
     names_df = pd.read_excel("Directors_3022.xlsx")
-    for val in names_df["Directors"]:
+    for val in names_df["Actors"]:
         names.append(val)
-    columns = ["Person name", "URL", "Role 1", "Role 2", "Role 3", "Video", "Actor description",
+    columns = ["Person name", "URL", "Born", "Role 1", "Role 2", "Role 3", "Video", "Actor description",
     "Other works", "Alternate names", "Spouse", "Children", "Parents", "Personal quotes",
     "Trivia", "Trademark", "Nickname"]
     df_main = pd.DataFrame(columns = columns)
@@ -208,11 +220,11 @@ def main():
             headers = {"Accept-Language": "en,en-gb;q=0.5"}
             r = requests.get(url, headers=headers)
             soup = BeautifulSoup(r.text, features="lxml")
-            d = {columns[0]: [name], columns[1]: [url], columns[2]: [get_roles(soup)[0]], columns[3]: [get_roles(soup)[1]], 
-                columns[4]: [get_roles(soup)[2]], columns[5]: [get_video_url(soup)], columns[6]: [get_bio(url)], 
-                columns[7]: [get_other_works(soup)], columns[8]: [get_alternate_names(soup)], columns[9]: [get_spouse(soup)],
-                columns[10]: [get_children(soup)], columns[11]: [get_parents(soup)], columns[12]: [get_quotes(soup)],
-                columns[13]: [get_trivia(soup)], columns[14]: [get_trademark(soup)], columns[15]: [get_nickname(soup)]}
+            d = {columns[0]: [name], columns[1]: [url], columns[2]: [get_born(soup)], columns[3]: [get_roles(soup)[0]], columns[4]: [get_roles(soup)[1]], 
+                columns[5]: [get_roles(soup)[2]], columns[6]: [get_video_url(soup)], columns[7]: [get_bio(url)], 
+                columns[8]: [get_other_works(soup)], columns[9]: [get_alternate_names(soup)], columns[10]: [get_spouse(soup)],
+                columns[11]: [get_children(soup)], columns[12]: [get_parents(soup)], columns[13]: [get_quotes(soup)],
+                columns[14]: [get_trivia(soup)], columns[15]: [get_trademark(soup)], columns[16]: [get_nickname(soup)]}
             df_temp = pd.DataFrame.from_dict(d)
             df_main = pd.concat([df_main, df_temp], ignore_index = True)
         end_time = time.time()
