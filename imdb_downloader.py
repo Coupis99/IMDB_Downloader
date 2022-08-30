@@ -186,7 +186,7 @@ def get_nickname(soup):
 
 def create_excel(df, file):
     writer = pd.ExcelWriter(file)
-    df.to_excel(writer, sheet_name="Actors", index=False)
+    df.to_excel(writer, sheet_name="Screenwriters", index=False)
     writer.save()
     return "Excel created"
 
@@ -196,16 +196,17 @@ def update_excel(df ,file):
     writer = pd.ExcelWriter(file, engine='openpyxl') 
     writer.book = book
     writer.sheets = dict((ws.title, ws) for ws in writer.book.worksheets)
-    df.to_excel(writer, sheet_name = 'Actors', index=False, header=False, startrow=len(reader)+1)
+    df.to_excel(writer, sheet_name = 'Screenwriters', index=False, header=False, startrow=len(reader)+1)
     writer.save()
     return "Excel updated"
 
 def main():
-    wait_time = 10
-    file = "output.xlsx"
+    wait_time = 60
+    file = "output2.xlsx"
+    miss_file = "miss_file.xlsx"
     names = []
-    names_df = pd.read_excel("Directors_3022.xlsx")
-    for val in names_df["Actors"]:
+    names_df = pd.read_excel("Screenwriters.xlsx")
+    for val in names_df["Screenwriters"]:
         names.append(val)
     columns = ["Person name", "URL", "Born", "Role 1", "Role 2", "Role 3", "Video", "Actor description",
     "Other works", "Alternate names", "Spouse", "Children", "Parents", "Personal quotes",
@@ -213,6 +214,10 @@ def main():
     df_main = pd.DataFrame(columns = columns)
     if not exists(file):
         create_excel(df_main, file)
+    column = ["Missing names"]
+    miss_df = pd.DataFrame(columns=column)
+    if not exists(miss_file):
+        create_excel(miss_df, miss_file)
     start_time = time.time()
     for name in tqdm(names):
         url = get_url(name)
@@ -227,6 +232,9 @@ def main():
                 columns[14]: [get_trivia(soup)], columns[15]: [get_trademark(soup)], columns[16]: [get_nickname(soup)]}
             df_temp = pd.DataFrame.from_dict(d)
             df_main = pd.concat([df_main, df_temp], ignore_index = True)
+        else:
+                miss_df.loc[""] = str(name)
+                update_excel(miss_df, miss_file)
         end_time = time.time()
         print(end_time - start_time)
         print(df_main)
